@@ -1,4 +1,5 @@
 const API_BASE = 'http://127.0.0.1:8000';
+const CONNECTION_ERROR_MESSAGE = `Cannot reach the backend at ${API_BASE}. Make sure the FastAPI server is running.`;
 
 const state = {
   tasks: [],
@@ -63,7 +64,30 @@ const els = {
   iconMoon: document.getElementById('iconMoon'),
   iconSun: document.getElementById('iconSun'),
   toast: document.getElementById('toast'),
+  errorBanner: document.getElementById('errorBanner'),
+  errorBannerText: document.getElementById('errorBannerText'),
+  errorBannerRetry: document.getElementById('errorBannerRetry'),
+  addTaskBtn: document.getElementById('addTaskBtn'),
+  addTaskIcon: document.getElementById('addTaskIcon'),
+  addTaskSpinner: document.getElementById('addTaskSpinner'),
+  addTaskLabel: document.getElementById('addTaskLabel'),
 };
+
+function showErrorBanner(message) {
+  els.errorBannerText.textContent = message;
+  els.errorBanner.hidden = false;
+}
+
+function hideErrorBanner() {
+  els.errorBanner.hidden = true;
+}
+
+function setAddTaskLoading(isLoading) {
+  els.addTaskBtn.disabled = isLoading;
+  els.addTaskIcon.hidden = isLoading;
+  els.addTaskSpinner.hidden = !isLoading;
+  els.addTaskLabel.textContent = isLoading ? 'Adding…' : 'Add Task';
+}
 
 function initTheme() {
   const saved = localStorage.getItem('taskboard.theme');
@@ -171,8 +195,10 @@ async function loadTasks() {
     const tasks = await apiFetchTasks();
     state.tasks = tasks.sort((a, b) => b.id - a.id);
     els.loadStatus.textContent = `Task API · ${state.tasks.length} task${state.tasks.length === 1 ? '' : 's'} loaded`;
+    hideErrorBanner();
   } catch (err) {
-    els.loadStatus.textContent = 'Could not reach the API. Is the backend running on http://127.0.0.1:8000?';
+    els.loadStatus.textContent = 'Not connected to the API.';
+    showErrorBanner(CONNECTION_ERROR_MESSAGE);
   }
   render();
 }
@@ -182,8 +208,7 @@ async function handleAddTask(e) {
   const title = els.title.value.trim();
   if (!title) return;
 
-  const submitBtn = els.form.querySelector('button[type="submit"]');
-  submitBtn.disabled = true;
+  setAddTaskLoading(true);
 
   try {
     const task = await apiAddTask({
@@ -197,10 +222,12 @@ async function handleAddTask(e) {
     els.form.reset();
     els.priority.value = 'medium';
     els.title.focus();
+    hideErrorBanner();
   } catch (err) {
     showToast('Could not add task — check the API connection');
+    showErrorBanner(CONNECTION_ERROR_MESSAGE);
   } finally {
-    submitBtn.disabled = false;
+    setAddTaskLoading(false);
   }
 }
 
@@ -211,17 +238,30 @@ async function handleListClick(e) {
 
   if (e.target.closest('.task-checkbox')) {
     const task = state.tasks.find((t) => String(t.id) === id);
-    const updated = await apiUpdateTask(id, { completed: !task.completed });
-    Object.assign(task, updated);
-    render();
+    try {
+      const updated = await apiUpdateTask(id, { completed: !task.completed });
+      Object.assign(task, updated);
+      render();
+      hideErrorBanner();
+    } catch (err) {
+      showToast('Could not update task — check the API connection');
+      showErrorBanner(CONNECTION_ERROR_MESSAGE);
+    }
   }
 
   if (e.target.closest('.task-delete')) {
     item.style.opacity = '0';
-    await apiDeleteTask(id);
-    state.tasks = state.tasks.filter((t) => String(t.id) !== id);
-    render();
-    showToast('Task deleted');
+    try {
+      await apiDeleteTask(id);
+      state.tasks = state.tasks.filter((t) => String(t.id) !== id);
+      render();
+      showToast('Task deleted');
+      hideErrorBanner();
+    } catch (err) {
+      item.style.opacity = '1';
+      showToast('Could not delete task — check the API connection');
+      showErrorBanner(CONNECTION_ERROR_MESSAGE);
+    }
   }
 }
 
@@ -245,10 +285,16 @@ function handleSearch(e) {
 async function handleClearCompleted() {
   const completed = state.tasks.filter((t) => t.completed);
   if (completed.length === 0) return;
-  await apiClearCompleted(completed.map((t) => t.id));
-  state.tasks = state.tasks.filter((t) => !t.completed);
-  render();
-  showToast('Completed tasks cleared');
+  try {
+    await apiClearCompleted(completed.map((t) => t.id));
+    state.tasks = state.tasks.filter((t) => !t.completed);
+    render();
+    showToast('Completed tasks cleared');
+    hideErrorBanner();
+  } catch (err) {
+    showToast('Could not clear completed tasks — check the API connection');
+    showErrorBanner(CONNECTION_ERROR_MESSAGE);
+  }
 }
 
 function init() {
@@ -259,6 +305,7 @@ function init() {
   els.filters.addEventListener('click', handleFilterClick);
   els.search.addEventListener('input', handleSearch);
   els.clearCompleted.addEventListener('click', handleClearCompleted);
+  els.errorBannerRetry.addEventListener('click', loadTasks);
   loadTasks();
 }
 

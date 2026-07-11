@@ -164,6 +164,69 @@ body {
   transition: width 0.3s ease;
 }
 
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: color-mix(in srgb, var(--danger) 12%, var(--bg-elevated));
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  animation: fadeIn 0.2s ease;
+}
+
+.error-banner[hidden] {
+  display: none;
+}
+
+.error-banner svg {
+  flex: none;
+}
+
+.error-banner span {
+  flex: 1;
+}
+
+.error-banner-retry {
+  flex: none;
+  background: transparent;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.error-banner-retry:hover {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border: 2px solid color-mix(in srgb, var(--accent-contrast) 35%, transparent);
+  border-top-color: var(--accent-contrast);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .panel {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
