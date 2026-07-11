@@ -1,8 +1,47 @@
+const API_BASE = 'http://127.0.0.1:8000';
+
 const state = {
   tasks: [],
   filter: 'all',
   search: '',
 };
+
+async function apiFetchTasks() {
+  const res = await fetch(`${API_BASE}/tasks`);
+  if (!res.ok) throw new Error('Failed to fetch tasks');
+  return res.json();
+}
+
+async function apiAddTask({ title, priority, due }) {
+  const res = await fetch(`${API_BASE}/tasks`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, priority, due: due || null }),
+  });
+  if (!res.ok) throw new Error('Failed to add task');
+  return res.json();
+}
+
+async function apiUpdateTask(id, changes) {
+  const res = await fetch(`${API_BASE}/tasks/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(changes),
+  });
+  if (!res.ok) throw new Error('Failed to update task');
+  return res.json();
+}
+
+async function apiDeleteTask(id) {
+  const res = await fetch(`${API_BASE}/tasks/${id}`, { method: 'DELETE' });
+  if (!res.ok && res.status !== 204) throw new Error('Failed to delete task');
+  return true;
+}
+
+async function apiClearCompleted(ids) {
+  await Promise.all(ids.map((id) => apiDeleteTask(id)));
+  return true;
+}
 
 const els = {
   form: document.getElementById('taskForm'),
@@ -127,9 +166,14 @@ function updateStats() {
 }
 
 async function loadTasks() {
-  els.loadStatus.textContent = 'Loading mock data…';
-  state.tasks = await mockApi.fetchTasks();
-  els.loadStatus.textContent = `Mock API · ${state.tasks.length} task${state.tasks.length === 1 ? '' : 's'} loaded`;
+  els.loadStatus.textContent = 'Connecting to API…';
+  try {
+    const tasks = await apiFetchTasks();
+    state.tasks = tasks.sort((a, b) => b.id - a.id);
+    els.loadStatus.textContent = `Task API · ${state.tasks.length} task${state.tasks.length === 1 ? '' : 's'} loaded`;
+  } catch (err) {
+    els.loadStatus.textContent = 'Could not reach the API. Is the backend running on http://127.0.0.1:8000?';
+  }
   render();
 }
 
@@ -142,7 +186,7 @@ async function handleAddTask(e) {
   submitBtn.disabled = true;
 
   try {
-    const task = await mockApi.addTask({
+    const task = await apiAddTask({
       title,
       priority: els.priority.value,
       due: els.due.value,
@@ -153,6 +197,8 @@ async function handleAddTask(e) {
     els.form.reset();
     els.priority.value = 'medium';
     els.title.focus();
+  } catch (err) {
+    showToast('Could not add task — check the API connection');
   } finally {
     submitBtn.disabled = false;
   }
@@ -164,16 +210,16 @@ async function handleListClick(e) {
   const id = item.dataset.id;
 
   if (e.target.closest('.task-checkbox')) {
-    const task = state.tasks.find((t) => t.id === id);
-    const updated = await mockApi.updateTask(id, { completed: !task.completed });
+    const task = state.tasks.find((t) => String(t.id) === id);
+    const updated = await apiUpdateTask(id, { completed: !task.completed });
     Object.assign(task, updated);
     render();
   }
 
   if (e.target.closest('.task-delete')) {
     item.style.opacity = '0';
-    await mockApi.deleteTask(id);
-    state.tasks = state.tasks.filter((t) => t.id !== id);
+    await apiDeleteTask(id);
+    state.tasks = state.tasks.filter((t) => String(t.id) !== id);
     render();
     showToast('Task deleted');
   }
@@ -197,9 +243,9 @@ function handleSearch(e) {
 }
 
 async function handleClearCompleted() {
-  const hasCompleted = state.tasks.some((t) => t.completed);
-  if (!hasCompleted) return;
-  await mockApi.clearCompleted();
+  const completed = state.tasks.filter((t) => t.completed);
+  if (completed.length === 0) return;
+  await apiClearCompleted(completed.map((t) => t.id));
   state.tasks = state.tasks.filter((t) => !t.completed);
   render();
   showToast('Completed tasks cleared');
