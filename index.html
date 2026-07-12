@@ -13,6 +13,10 @@
         <span class="brand-mark">◆</span>
         <span class="brand-name">TaskBoard</span>
       </div>
+      <div id="weatherIndicator" class="weather-indicator" aria-live="polite">
+        <span id="weatherIcon" class="weather-icon">🌡️</span>
+        <span id="weatherText">Loading weather…</span>
+      </div>
       <button id="themeToggle" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">
         <svg id="iconMoon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
         <svg id="iconSun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
@@ -88,7 +92,16 @@
 
   <div id="toast" class="toast"></div>
 
+  <div id="flashcard" class="flashcard" role="status" aria-live="polite">
+    <span id="flashcardIcon" class="flashcard-icon">🎉</span>
+    <div class="flashcard-body">
+      <span id="flashcardText" class="flashcard-text"></span>
+      <div class="flashcard-progress-track"><div id="flashcardProgress" class="flashcard-progress"></div></div>
+    </div>
+  </div>
+
   <script src="mockApi.js"></script>
+  <script src="weather.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

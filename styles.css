@@ -122,6 +122,26 @@ body {
   transform: scale(0.94);
 }
 
+.weather-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+}
+
+.weather-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
 .content {
   flex: 1;
 }
@@ -491,6 +511,76 @@ body {
   transform: translateX(-50%) translateY(0);
 }
 
+.flashcard {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  transform: translateY(-12px);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 14px;
+  padding: 14px 18px;
+  box-shadow: var(--shadow);
+  width: min(320px, calc(100vw - 48px));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 60;
+}
+
+.flashcard.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.flashcard-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+  flex: none;
+}
+
+.flashcard-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.flashcard-text {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.flashcard-progress-track {
+  height: 3px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.flashcard-progress {
+  height: 100%;
+  width: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+}
+
+.flashcard.show .flashcard-progress {
+  animation: flashcardShrink 2.5s linear forwards;
+}
+
+@keyframes flashcardShrink {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
 @media (max-width: 560px) {
   .stats {
     grid-template-columns: repeat(2, 1fr);
@@ -504,5 +594,23 @@ body {
   .task-form .input,
   .task-form .btn {
     width: 100%;
+  }
+  .topbar {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .weather-indicator {
+    order: 3;
+  }
+  .flashcard {
+    top: auto;
+    bottom: 90px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+    transform: translateY(12px);
+  }
+  .flashcard.show {
+    transform: translateY(0);
   }
 }

@@ -25,7 +25,40 @@ const els = {
   iconMoon: document.getElementById('iconMoon'),
   iconSun: document.getElementById('iconSun'),
   toast: document.getElementById('toast'),
+  weatherIcon: document.getElementById('weatherIcon'),
+  weatherText: document.getElementById('weatherText'),
+  flashcard: document.getElementById('flashcard'),
+  flashcardIcon: document.getElementById('flashcardIcon'),
+  flashcardText: document.getElementById('flashcardText'),
+  flashcardProgress: document.getElementById('flashcardProgress'),
 };
+
+const MOTIVATION = {
+  high: [
+    'Crushing it — high priority, high energy!',
+    'Beast mode engaged. Big one down!',
+    'Huge win, momentum unlocked!',
+  ],
+  medium: [
+    'Nice work, task complete!',
+    'Solid progress, keep the streak going!',
+    'One more off the list!',
+  ],
+  low: [
+    'Small win, still counts!',
+    'Nice, tidying things up.',
+    'Done and dusted!',
+  ],
+};
+
+const CATEGORY_FLAVOR = {
+  work: 'Work task handled.',
+  personal: 'Personal goal reached.',
+  shopping: 'Shopping list shrinking.',
+};
+
+const PRIORITY_EMOJI = { high: '🔥', medium: '💪', low: '✨' };
+const PRIORITY_ACCENT = { high: 'var(--danger)', medium: 'var(--warning)', low: 'var(--success)' };
 
 function initTheme() {
   const saved = localStorage.getItem('taskboard.theme');
@@ -55,6 +88,40 @@ function showToast(message) {
   els.toast.classList.add('show');
   clearTimeout(showToast._t);
   showToast._t = setTimeout(() => els.toast.classList.remove('show'), 1800);
+}
+
+function getMotivationalMessage(task) {
+  const pool = MOTIVATION[task.priority] || MOTIVATION.medium;
+  const base = pool[Math.floor(Math.random() * pool.length)];
+  const flavor = CATEGORY_FLAVOR[task.category] || '';
+  return flavor ? `${base} ${flavor}` : base;
+}
+
+function showFlashcard(task) {
+  const accent = PRIORITY_ACCENT[task.priority] || 'var(--accent)';
+  els.flashcard.style.borderLeftColor = accent;
+  els.flashcardIcon.style.color = accent;
+  els.flashcardIcon.textContent = PRIORITY_EMOJI[task.priority] || '🎉';
+  els.flashcardText.textContent = getMotivationalMessage(task);
+
+  els.flashcard.classList.remove('show');
+  // force reflow so the progress-bar animation restarts on rapid re-triggers
+  void els.flashcard.offsetWidth;
+  els.flashcard.classList.add('show');
+
+  clearTimeout(showFlashcard._t);
+  showFlashcard._t = setTimeout(() => els.flashcard.classList.remove('show'), 2500);
+}
+
+async function loadWeather() {
+  try {
+    const { icon, label, temp } = await weatherApi.fetchLeipzigWeather();
+    els.weatherIcon.textContent = icon;
+    els.weatherText.textContent = `Leipzig: ${label}, ${temp}°C`;
+  } catch (err) {
+    els.weatherIcon.textContent = '🌡️';
+    els.weatherText.textContent = 'Leipzig: weather unavailable';
+  }
 }
 
 function formatDue(due) {
@@ -169,9 +236,11 @@ async function handleListClick(e) {
 
   if (e.target.closest('.task-checkbox')) {
     const task = state.tasks.find((t) => t.id === id);
+    const wasCompleted = task.completed;
     const updated = await mockApi.updateTask(id, { completed: !task.completed });
     Object.assign(task, updated);
     render();
+    if (!wasCompleted && task.completed) showFlashcard(task);
   }
 
   if (e.target.closest('.task-delete')) {
@@ -218,6 +287,7 @@ function init() {
   els.search.addEventListener('input', handleSearch);
   els.clearCompleted.addEventListener('click', handleClearCompleted);
   loadTasks();
+  loadWeather();
 }
 
 init();
