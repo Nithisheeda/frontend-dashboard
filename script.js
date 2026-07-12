@@ -197,9 +197,14 @@ function updateStats() {
 
 async function loadTasks() {
   els.loadStatus.textContent = 'Loading mock data…';
-  state.tasks = await mockApi.fetchTasks();
-  els.loadStatus.textContent = `Mock API · ${state.tasks.length} task${state.tasks.length === 1 ? '' : 's'} loaded`;
-  render();
+  try {
+    state.tasks = await mockApi.fetchTasks();
+    els.loadStatus.textContent = `Mock API · ${state.tasks.length} task${state.tasks.length === 1 ? '' : 's'} loaded`;
+    render();
+  } catch (err) {
+    console.error('Failed to load mock tasks:', err);
+    els.loadStatus.textContent = 'Could not load mock data — see console for details.';
+  }
 }
 
 async function handleAddTask(e) {
