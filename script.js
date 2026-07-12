@@ -8,6 +8,7 @@ const els = {
   form: document.getElementById('taskForm'),
   title: document.getElementById('taskTitle'),
   priority: document.getElementById('taskPriority'),
+  category: document.getElementById('taskCategory'),
   due: document.getElementById('taskDue'),
   list: document.getElementById('taskList'),
   empty: document.getElementById('emptyState'),
@@ -99,6 +100,7 @@ function render() {
         <span class="task-title"></span>
         <div class="task-meta">
           <span class="priority-badge priority-${task.priority}">${task.priority}</span>
+          <span class="category-badge category-${task.category || 'personal'}">${task.category || 'personal'}</span>
           ${dueLabel ? `<span style="${overdue ? 'color: var(--danger); font-weight:600;' : ''}">${overdue ? 'Overdue · ' : 'Due '}${dueLabel}</span>` : ''}
         </div>
       </div>
@@ -145,6 +147,7 @@ async function handleAddTask(e) {
     const task = await mockApi.addTask({
       title,
       priority: els.priority.value,
+      category: els.category.value,
       due: els.due.value,
     });
     state.tasks.unshift(task);
@@ -152,6 +155,7 @@ async function handleAddTask(e) {
     showToast('Task added');
     els.form.reset();
     els.priority.value = 'medium';
+    els.category.value = 'personal';
     els.title.focus();
   } finally {
     submitBtn.disabled = false;

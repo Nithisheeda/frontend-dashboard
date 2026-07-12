@@ -9,6 +9,9 @@
   --danger: #e5484d;
   --success: #2fb380;
   --warning: #e2a63c;
+  --cat-personal: #8b5cf6;
+  --cat-work: #2563eb;
+  --cat-shopping: #0d9488;
   --shadow: 0 1px 2px rgba(16, 18, 22, 0.06), 0 8px 24px rgba(16, 18, 22, 0.04);
   --radius: 12px;
   color-scheme: light;
@@ -25,6 +28,9 @@
   --danger: #f16a6e;
   --success: #3ecf94;
   --warning: #edb95e;
+  --cat-personal: #a78bfa;
+  --cat-work: #60a5fa;
+  --cat-shopping: #2dd4bf;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.28);
   color-scheme: dark;
 }
@@ -41,6 +47,9 @@
     --danger: #f16a6e;
     --success: #3ecf94;
     --warning: #edb95e;
+    --cat-personal: #a78bfa;
+    --cat-work: #60a5fa;
+    --cat-shopping: #2dd4bf;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.28);
     color-scheme: dark;
   }
@@ -392,6 +401,30 @@ body {
 .priority-low {
   background: color-mix(in srgb, var(--success) 16%, transparent);
   color: var(--success);
+}
+
+.category-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.category-personal {
+  background: color-mix(in srgb, var(--cat-personal) 16%, transparent);
+  color: var(--cat-personal);
+}
+
+.category-work {
+  background: color-mix(in srgb, var(--cat-work) 16%, transparent);
+  color: var(--cat-work);
+}
+
+.category-shopping {
+  background: color-mix(in srgb, var(--cat-shopping) 16%, transparent);
+  color: var(--cat-shopping);
 }
 
 .task-delete {
