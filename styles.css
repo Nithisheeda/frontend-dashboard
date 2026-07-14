@@ -142,6 +142,39 @@ body {
   line-height: 1;
 }
 
+.streak-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+  cursor: default;
+}
+
+.streak-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+  filter: grayscale(1);
+  opacity: 0.5;
+  transition: filter 0.2s ease, opacity 0.2s ease;
+}
+
+.streak-indicator.active {
+  color: var(--text);
+}
+
+.streak-indicator.active .streak-icon {
+  filter: grayscale(0);
+  opacity: 1;
+}
+
 .content {
   flex: 1;
 }
@@ -206,6 +239,13 @@ body {
   gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 16px;
+}
+
+.smart-hint {
+  margin: -10px 0 16px;
+  font-size: 0.78rem;
+  color: var(--accent);
+  font-weight: 500;
 }
 
 .input {
@@ -612,6 +652,9 @@ body {
   }
   .weather-indicator {
     order: 3;
+  }
+  .streak-indicator {
+    order: 4;
   }
   .flashcard {
     top: auto;

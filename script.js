@@ -31,7 +31,12 @@ const els = {
   flashcardIcon: document.getElementById('flashcardIcon'),
   flashcardText: document.getElementById('flashcardText'),
   flashcardProgress: document.getElementById('flashcardProgress'),
+  streakIndicator: document.getElementById('streakIndicator'),
+  streakCount: document.getElementById('streakCount'),
+  smartHint: document.getElementById('smartHint'),
 };
+
+const STREAK_KEY = 'taskboard.streak.v1';
 
 const MOTIVATION = {
   high: [
@@ -111,6 +116,88 @@ function showFlashcard(task) {
 
   clearTimeout(showFlashcard._t);
   showFlashcard._t = setTimeout(() => els.flashcard.classList.remove('show'), 2500);
+}
+
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+function dateStr(d) {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+function todayStr() {
+  return dateStr(new Date());
+}
+
+function yesterdayStr() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return dateStr(d);
+}
+
+function loadStreak() {
+  try {
+    const raw = localStorage.getItem(STREAK_KEY);
+    return raw ? JSON.parse(raw) : { count: 0, lastCompletionDate: null };
+  } catch {
+    return { count: 0, lastCompletionDate: null };
+  }
+}
+
+function saveStreak(streak) {
+  localStorage.setItem(STREAK_KEY, JSON.stringify(streak));
+}
+
+function renderStreak(count) {
+  els.streakCount.textContent = count;
+  els.streakIndicator.classList.toggle('active', count > 0);
+}
+
+function initStreak() {
+  const streak = loadStreak();
+  // A streak only stays "alive" on screen if the last completion was today or
+  // yesterday; a bigger gap means it's already broken, so show 0 immediately
+  // rather than displaying a stale count until the next completion resets it.
+  const stillAlive = streak.lastCompletionDate === todayStr() || streak.lastCompletionDate === yesterdayStr();
+  renderStreak(stillAlive ? streak.count : 0);
+}
+
+function recordStreakCompletion() {
+  const streak = loadStreak();
+  const today = todayStr();
+  if (streak.lastCompletionDate === today) {
+    // already have a completion logged for today — no change
+  } else if (streak.lastCompletionDate === yesterdayStr()) {
+    streak.count += 1;
+    streak.lastCompletionDate = today;
+  } else {
+    streak.count = 1;
+    streak.lastCompletionDate = today;
+  }
+  saveStreak(streak);
+  renderStreak(streak.count);
+}
+
+function updateSmartHint() {
+  const raw = els.title.value;
+  if (!raw.trim()) {
+    els.smartHint.hidden = true;
+    return;
+  }
+  const parsed = nlpParser.parse(raw);
+  if (parsed.due) els.due.value = parsed.due;
+  if (parsed.category) els.category.value = parsed.category;
+
+  if (!parsed.due && !parsed.category) {
+    els.smartHint.hidden = true;
+    return;
+  }
+  const parts = [];
+  if (parsed.due) parts.push(`📅 ${formatDue(parsed.due)}`);
+  if (parsed.category) parts.push(`🏷️ ${parsed.category}`);
+  els.smartHint.textContent = `Detected: ${parts.join(' · ')}`;
+  els.smartHint.hidden = false;
 }
 
 async function loadWeather() {
@@ -218,8 +305,13 @@ async function loadTasks() {
 
 async function handleAddTask(e) {
   e.preventDefault();
-  const title = els.title.value.trim();
-  if (!title) return;
+  const rawTitle = els.title.value.trim();
+  if (!rawTitle) return;
+
+  const parsed = nlpParser.parse(rawTitle);
+  const title = parsed.title || rawTitle;
+  const due = parsed.due || els.due.value;
+  const category = parsed.category || els.category.value;
 
   const submitBtn = els.form.querySelector('button[type="submit"]');
   submitBtn.disabled = true;
@@ -228,8 +320,8 @@ async function handleAddTask(e) {
     const task = await mockApi.addTask({
       title,
       priority: els.priority.value,
-      category: els.category.value,
-      due: els.due.value,
+      category,
+      due,
     });
     state.tasks.unshift(task);
     render();
@@ -237,6 +329,7 @@ async function handleAddTask(e) {
     els.form.reset();
     els.priority.value = 'medium';
     els.category.value = 'personal';
+    els.smartHint.hidden = true;
     els.title.focus();
   } finally {
     submitBtn.disabled = false;
@@ -254,7 +347,10 @@ async function handleListClick(e) {
     const updated = await mockApi.updateTask(id, { completed: !task.completed });
     Object.assign(task, updated);
     render();
-    if (!wasCompleted && task.completed) showFlashcard(task);
+    if (!wasCompleted && task.completed) {
+      showFlashcard(task);
+      recordStreakCompletion();
+    }
   }
 
   if (e.target.closest('.task-delete')) {
@@ -292,16 +388,27 @@ async function handleClearCompleted() {
   showToast('Completed tasks cleared');
 }
 
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
+  navigator.serviceWorker.register('sw.js').catch((err) => {
+    console.error('Service worker registration failed:', err);
+  });
+}
+
 function init() {
   initTheme();
+  initStreak();
   els.themeToggle.addEventListener('click', toggleTheme);
   els.form.addEventListener('submit', handleAddTask);
+  els.title.addEventListener('input', updateSmartHint);
   els.list.addEventListener('click', handleListClick);
   els.filters.addEventListener('click', handleFilterClick);
   els.search.addEventListener('input', handleSearch);
   els.clearCompleted.addEventListener('click', handleClearCompleted);
   loadTasks();
   loadWeather();
+  registerServiceWorker();
 }
 
 init();

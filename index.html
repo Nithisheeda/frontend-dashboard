@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TaskBoard — Dashboard</title>
+<meta name="description" content="A self-contained, offline-capable task dashboard.">
+<meta name="theme-color" content="#14161b">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -16,6 +21,10 @@
       <div id="weatherIndicator" class="weather-indicator" aria-live="polite">
         <span id="weatherIcon" class="weather-icon">🌡️</span>
         <span id="weatherText">Loading weather…</span>
+      </div>
+      <div id="streakIndicator" class="streak-indicator" title="Consecutive days with a completed task">
+        <span class="streak-icon">🔥</span>
+        <span id="streakCount">0</span>
       </div>
       <button id="themeToggle" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">
         <svg id="iconMoon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
@@ -46,7 +55,7 @@
 
       <section class="panel">
         <form id="taskForm" class="task-form">
-          <input type="text" id="taskTitle" class="input" placeholder="What needs to be done?" autocomplete="off" required maxlength="120">
+          <input type="text" id="taskTitle" class="input" placeholder="Try: &quot;Review sports data tomorrow at 5 PM #work&quot;" autocomplete="off" required maxlength="120">
           <select id="taskPriority" class="input select">
             <option value="low">Low</option>
             <option value="medium" selected>Medium</option>
@@ -63,6 +72,7 @@
             Add Task
           </button>
         </form>
+        <div id="smartHint" class="smart-hint" hidden></div>
 
         <div class="toolbar">
           <div class="filters" id="filters">
@@ -102,6 +112,7 @@
 
   <script src="mockApi.js"></script>
   <script src="weather.js"></script>
+  <script src="nlpParser.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
