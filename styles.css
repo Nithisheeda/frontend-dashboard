@@ -175,6 +175,41 @@ body {
   opacity: 1;
 }
 
+.settings-wrapper {
+  position: relative;
+}
+
+.settings-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 6px;
+  z-index: 40;
+}
+
+.settings-menu-item {
+  text-align: left;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.settings-menu-item:hover {
+  background: var(--border);
+}
+
 .content {
   flex: 1;
 }
@@ -375,13 +410,25 @@ body {
 
 .task-item {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 10px;
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--bg);
   animation: fadeIn 0.2s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.task-item.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 @keyframes fadeIn {
@@ -418,12 +465,168 @@ body {
   gap: 3px;
 }
 
+.task-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .task-title {
+  flex: 1;
+  min-width: 0;
   font-size: 0.94rem;
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.expand-toggle {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.expand-toggle:hover {
+  background: var(--border);
+}
+
+.expand-toggle svg {
+  transition: transform 0.15s ease;
+}
+
+.expand-toggle.expanded svg {
+  transform: rotate(180deg);
+}
+
+.subtask-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.7rem;
+  background: color-mix(in srgb, var(--text-muted) 16%, transparent);
+  color: var(--text-muted);
+}
+
+.subtask-panel {
+  padding: 10px 0 0 32px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.subtask-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.subtask-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subtask-checkbox {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-radius: 5px;
+  border: 2px solid var(--border);
+  background: var(--bg-elevated);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  transition: all 0.15s ease;
+}
+
+.subtask-checkbox.checked {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+}
+
+.subtask-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtask-text.completed {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.subtask-delete {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.subtask-delete:hover {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+}
+
+.subtask-add-row {
+  display: flex;
+  gap: 6px;
+}
+
+.subtask-add-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+  font-family: inherit;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text);
+  outline: none;
+}
+
+.subtask-add-input:focus {
+  border-color: var(--accent);
+}
+
+.subtask-add-btn {
+  flex: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .task-item.completed .task-title {
@@ -537,6 +740,14 @@ body {
   padding: 24px 0;
   color: var(--text-muted);
   font-size: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.shortcut-hint {
+  font-size: 0.72rem;
+  opacity: 0.7;
 }
 
 .toast {
@@ -655,6 +866,9 @@ body {
   }
   .streak-indicator {
     order: 4;
+  }
+  .settings-wrapper {
+    order: 5;
   }
   .flashcard {
     top: auto;

@@ -2,6 +2,8 @@ const state = {
   tasks: [],
   filter: 'all',
   search: '',
+  expandedTaskIds: new Set(),
+  selectedTaskId: null,
 };
 
 const els = {
@@ -34,6 +36,11 @@ const els = {
   streakIndicator: document.getElementById('streakIndicator'),
   streakCount: document.getElementById('streakCount'),
   smartHint: document.getElementById('smartHint'),
+  settingsBtn: document.getElementById('settingsBtn'),
+  settingsMenu: document.getElementById('settingsMenu'),
+  exportBtn: document.getElementById('exportBtn'),
+  importBtn: document.getElementById('importBtn'),
+  importFileInput: document.getElementById('importFileInput'),
 };
 
 const STREAK_KEY = 'taskboard.streak.v1';
@@ -240,6 +247,32 @@ function getFilteredTasks() {
   });
 }
 
+function buildSubtaskPanelHTML(subtasks) {
+  const items = subtasks
+    .map(
+      (s) => `
+    <li class="subtask-item" data-subtask-id="${s.id}">
+      <button class="subtask-checkbox${s.completed ? ' checked' : ''}" aria-label="Toggle subtask">
+        ${s.completed ? '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' : ''}
+      </button>
+      <span class="subtask-text${s.completed ? ' completed' : ''}"></span>
+      <button class="subtask-delete" aria-label="Delete subtask">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </li>`
+    )
+    .join('');
+
+  return `
+    <div class="subtask-panel">
+      <ul class="subtask-list">${items}</ul>
+      <div class="subtask-add-row">
+        <input type="text" class="subtask-add-input" placeholder="Add a micro-step…" maxlength="120">
+        <button type="button" class="subtask-add-btn">Add</button>
+      </div>
+    </div>`;
+}
+
 function render() {
   const filtered = getFilteredTasks();
   els.list.innerHTML = '';
@@ -247,31 +280,49 @@ function render() {
 
   filtered.forEach((task) => {
     const li = document.createElement('li');
-    li.className = 'task-item' + (task.completed ? ' completed' : '');
+    const isExpanded = state.expandedTaskIds.has(task.id);
+    const isSelected = state.selectedTaskId === task.id;
+    li.className = 'task-item' + (task.completed ? ' completed' : '') + (isSelected ? ' selected' : '');
     li.dataset.id = task.id;
 
     const dueLabel = formatDue(task.due);
     const overdue = isOverdue(task.due, task.completed);
     const completedEarly = isCompletedEarly(task.due, task.completed);
+    const subtasks = task.subtasks || [];
+    const doneSubtasks = subtasks.filter((s) => s.completed).length;
 
     li.innerHTML = `
-      <button class="task-checkbox${task.completed ? ' checked' : ''}" aria-label="Toggle complete">
-        ${task.completed ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' : ''}
-      </button>
-      <div class="task-body">
-        <span class="task-title"></span>
-        <div class="task-meta">
-          <span class="priority-badge priority-${task.priority}">${task.priority}</span>
-          <span class="category-badge category-${task.category || 'personal'}">${task.category || 'personal'}</span>
-          ${completedEarly ? '<span class="early-badge" title="Marked complete before its due date">⏱ Early</span>' : ''}
-          ${dueLabel ? `<span style="${overdue ? 'color: var(--danger); font-weight:600;' : ''}">${overdue ? 'Overdue · ' : 'Due '}${dueLabel}</span>` : ''}
+      <div class="task-row">
+        <button class="task-checkbox${task.completed ? ' checked' : ''}" aria-label="Toggle complete">
+          ${task.completed ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' : ''}
+        </button>
+        <div class="task-body">
+          <div class="task-title-row">
+            <span class="task-title"></span>
+            <button class="expand-toggle${isExpanded ? ' expanded' : ''}" aria-label="Toggle subtasks" aria-expanded="${isExpanded}">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+          </div>
+          <div class="task-meta">
+            <span class="priority-badge priority-${task.priority}">${task.priority}</span>
+            <span class="category-badge category-${task.category || 'personal'}">${task.category || 'personal'}</span>
+            ${subtasks.length > 0 ? `<span class="subtask-badge">${doneSubtasks}/${subtasks.length} subtasks</span>` : ''}
+            ${completedEarly ? '<span class="early-badge" title="Marked complete before its due date">⏱ Early</span>' : ''}
+            ${dueLabel ? `<span style="${overdue ? 'color: var(--danger); font-weight:600;' : ''}">${overdue ? 'Overdue · ' : 'Due '}${dueLabel}</span>` : ''}
+          </div>
         </div>
+        <button class="task-delete" aria-label="Delete task">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+        </button>
       </div>
-      <button class="task-delete" aria-label="Delete task">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
-      </button>
+      ${isExpanded ? buildSubtaskPanelHTML(subtasks) : ''}
     `;
     li.querySelector('.task-title').textContent = task.title;
+    if (isExpanded) {
+      li.querySelectorAll('.subtask-item').forEach((subEl, idx) => {
+        subEl.querySelector('.subtask-text').textContent = subtasks[idx].text;
+      });
+    }
     els.list.appendChild(li);
   });
 
@@ -336,10 +387,56 @@ async function handleAddTask(e) {
   }
 }
 
+function toggleExpand(taskId) {
+  if (state.expandedTaskIds.has(taskId)) state.expandedTaskIds.delete(taskId);
+  else state.expandedTaskIds.add(taskId);
+  render();
+}
+
+async function addSubtaskFromRow(item, taskId) {
+  const input = item.querySelector('.subtask-add-input');
+  const text = input.value.trim();
+  if (!text) return;
+  const task = state.tasks.find((t) => t.id === taskId);
+  const updated = await mockApi.addSubtask(taskId, text);
+  Object.assign(task, updated);
+  render();
+  const freshInput = els.list.querySelector(`.task-item[data-id="${taskId}"] .subtask-add-input`);
+  if (freshInput) freshInput.focus();
+}
+
 async function handleListClick(e) {
   const item = e.target.closest('.task-item');
   if (!item) return;
   const id = item.dataset.id;
+
+  if (e.target.closest('.expand-toggle')) {
+    toggleExpand(id);
+    return;
+  }
+
+  if (e.target.closest('.subtask-checkbox')) {
+    const subtaskId = e.target.closest('.subtask-item').dataset.subtaskId;
+    const task = state.tasks.find((t) => t.id === id);
+    const updated = await mockApi.toggleSubtask(id, subtaskId);
+    Object.assign(task, updated);
+    render();
+    return;
+  }
+
+  if (e.target.closest('.subtask-delete')) {
+    const subtaskId = e.target.closest('.subtask-item').dataset.subtaskId;
+    const task = state.tasks.find((t) => t.id === id);
+    const updated = await mockApi.deleteSubtask(id, subtaskId);
+    Object.assign(task, updated);
+    render();
+    return;
+  }
+
+  if (e.target.closest('.subtask-add-btn')) {
+    await addSubtaskFromRow(item, id);
+    return;
+  }
 
   if (e.target.closest('.task-checkbox')) {
     const task = state.tasks.find((t) => t.id === id);
@@ -351,6 +448,7 @@ async function handleListClick(e) {
       showFlashcard(task);
       recordStreakCompletion();
     }
+    return;
   }
 
   if (e.target.closest('.task-delete')) {
@@ -359,6 +457,14 @@ async function handleListClick(e) {
     state.tasks = state.tasks.filter((t) => t.id !== id);
     render();
     showToast('Task deleted');
+  }
+}
+
+function handleListKeydown(e) {
+  if (e.key === 'Enter' && e.target.classList.contains('subtask-add-input')) {
+    e.preventDefault();
+    const item = e.target.closest('.task-item');
+    addSubtaskFromRow(item, item.dataset.id);
   }
 }
 
@@ -388,6 +494,107 @@ async function handleClearCompleted() {
   showToast('Completed tasks cleared');
 }
 
+function toggleSettingsMenu(forceOpen) {
+  const isOpen = !els.settingsMenu.hidden;
+  const next = forceOpen === undefined ? !isOpen : forceOpen;
+  els.settingsMenu.hidden = !next;
+  els.settingsBtn.setAttribute('aria-expanded', String(next));
+}
+
+function handleDocumentClick(e) {
+  if (!els.settingsMenu.hidden && !e.target.closest('.settings-wrapper')) {
+    toggleSettingsMenu(false);
+  }
+}
+
+async function handleExport() {
+  const tasks = await mockApi.exportTasks();
+  const blob = new Blob([JSON.stringify(tasks, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `taskboard-export-${todayStr()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast('Tasks exported');
+  toggleSettingsMenu(false);
+}
+
+function handleImportClick() {
+  toggleSettingsMenu(false);
+  els.importFileInput.click();
+}
+
+async function handleImportFile(e) {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    state.tasks = await mockApi.importTasks(parsed);
+    state.selectedTaskId = null;
+    state.expandedTaskIds.clear();
+    render();
+    showToast(`Imported ${state.tasks.length} task${state.tasks.length === 1 ? '' : 's'}`);
+  } catch (err) {
+    console.error('Import failed:', err);
+    showToast('Import failed — invalid file');
+  }
+}
+
+function isTypingTarget(el) {
+  if (!el) return false;
+  return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT';
+}
+
+function moveSelection(delta) {
+  const filtered = getFilteredTasks();
+  if (filtered.length === 0) return;
+  let idx = filtered.findIndex((t) => t.id === state.selectedTaskId);
+  idx = idx === -1 ? 0 : Math.min(Math.max(idx + delta, 0), filtered.length - 1);
+  state.selectedTaskId = filtered[idx].id;
+  render();
+  const el = els.list.querySelector(`.task-item[data-id="${state.selectedTaskId}"]`);
+  if (el) el.scrollIntoView({ block: 'nearest' });
+}
+
+function handleGlobalKeydown(e) {
+  if (e.key === 'Escape') {
+    if (!els.settingsMenu.hidden) {
+      toggleSettingsMenu(false);
+      return;
+    }
+    if (document.activeElement === els.title) {
+      els.title.value = '';
+      updateSmartHint();
+      els.title.blur();
+    }
+    return;
+  }
+
+  if (isTypingTarget(document.activeElement)) return;
+
+  if (e.key === 'n' || e.key === 'N') {
+    e.preventDefault();
+    els.title.focus();
+    return;
+  }
+
+  if (e.key === 'j' || e.key === 'J') {
+    e.preventDefault();
+    moveSelection(1);
+    return;
+  }
+
+  if (e.key === 'k' || e.key === 'K') {
+    e.preventDefault();
+    moveSelection(-1);
+  }
+}
+
 function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
   if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
@@ -403,9 +610,19 @@ function init() {
   els.form.addEventListener('submit', handleAddTask);
   els.title.addEventListener('input', updateSmartHint);
   els.list.addEventListener('click', handleListClick);
+  els.list.addEventListener('keydown', handleListKeydown);
   els.filters.addEventListener('click', handleFilterClick);
   els.search.addEventListener('input', handleSearch);
   els.clearCompleted.addEventListener('click', handleClearCompleted);
+  els.settingsBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleSettingsMenu();
+  });
+  document.addEventListener('click', handleDocumentClick);
+  els.exportBtn.addEventListener('click', handleExport);
+  els.importBtn.addEventListener('click', handleImportClick);
+  els.importFileInput.addEventListener('change', handleImportFile);
+  document.addEventListener('keydown', handleGlobalKeydown);
   loadTasks();
   loadWeather();
   registerServiceWorker();
