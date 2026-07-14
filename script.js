@@ -137,6 +137,13 @@ function isOverdue(due, completed) {
   return new Date(`${due}T00:00:00`) < today;
 }
 
+function isCompletedEarly(due, completed) {
+  if (!due || !completed) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(`${due}T00:00:00`) > today;
+}
+
 function getFilteredTasks() {
   return state.tasks.filter((task) => {
     if (state.filter === 'pending' && task.completed) return false;
@@ -158,6 +165,7 @@ function render() {
 
     const dueLabel = formatDue(task.due);
     const overdue = isOverdue(task.due, task.completed);
+    const completedEarly = isCompletedEarly(task.due, task.completed);
 
     li.innerHTML = `
       <button class="task-checkbox${task.completed ? ' checked' : ''}" aria-label="Toggle complete">
@@ -168,6 +176,7 @@ function render() {
         <div class="task-meta">
           <span class="priority-badge priority-${task.priority}">${task.priority}</span>
           <span class="category-badge category-${task.category || 'personal'}">${task.category || 'personal'}</span>
+          ${completedEarly ? '<span class="early-badge" title="Marked complete before its due date">⏱ Early</span>' : ''}
           ${dueLabel ? `<span style="${overdue ? 'color: var(--danger); font-weight:600;' : ''}">${overdue ? 'Overdue · ' : 'Due '}${dueLabel}</span>` : ''}
         </div>
       </div>

@@ -447,6 +447,17 @@ body {
   color: var(--cat-shopping);
 }
 
+.early-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  cursor: help;
+}
+
 .task-delete {
   flex: none;
   width: 32px;
